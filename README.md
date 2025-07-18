@@ -10,6 +10,10 @@ This is a simple, real-time web application designed for you and your partner (o
 
 * **Feed Your Pets:** Keep your "Lil Guys" happy by feeding them various treats, which increases their happiness level.
 
+* **Food Preferences:** Each pet type has unique food preferences, meaning some foods will make them happier, while others might decrease their happiness!
+
+* **Chewing Meter:** A visual chewing bar appears after feeding, showing the cooldown period before your pet can be fed again.
+
 * **Happiness Decay:** Pets' happiness levels will gradually decrease over time (every 12 hours), adding a realistic care element and encouraging regular interaction.
 
 * **Speech Bubbles:** Your "Lil Guys" can now express themselves! Speech bubbles will periodically appear above your selected pet, showing various messages based on their mood and type.
