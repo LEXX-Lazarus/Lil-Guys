@@ -25,7 +25,7 @@
             /* Removed overflow: hidden; to allow vertical scrolling on smaller screens */
         }
 
-        /* Custom scrollbar for pet list */
+        /* Custom scrollbar for pet list and food area */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
         }
@@ -100,7 +100,7 @@
             font-size: 0.875rem; /* text-sm */
             color: #1a202c; /* text-gray-900 */
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            /* Removed white-space: nowrap; to allow text wrapping on small screens */
+            /* Allow text wrapping on smaller screens */
             z-index: 50;
             opacity: 0;
             transform: translateY(10px);
@@ -152,7 +152,7 @@
     <div class="bg-gray-900 bg-opacity-80 backdrop-blur-sm p-6 md:p-8 rounded-3xl shadow-2xl text-center max-w-4xl w-full flex flex-col md:flex-row gap-6 border border-purple-600 flex-grow">
 
         <!-- Left Panel: Pet List -->
-        <div class="md:w-1/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col shadow-inner h-full">
+        <div class="md:w-1/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col shadow-inner md:h-full max-h-[50vh] sm:max-h-[60vh]">
             <h2 class="text-2xl font-bold mb-4 text-purple-300">My Pets</h2>
             <div id="petList" class="flex-grow overflow-y-auto custom-scrollbar space-y-3 pr-2">
                 <!-- Pet items will be rendered here -->
@@ -163,7 +163,7 @@
         </div>
 
         <!-- Right Panel: Selected Pet Display & Interaction -->
-        <div class="md:w-2/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col justify-between shadow-inner pt-20">
+        <div class="md:w-2/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col justify-between shadow-inner pt-10 md:pt-20">
             <h2 id="selectedPetName" class="text-3xl font-extrabold mb-4 text-pink-300">Select a Pet</h2>
 
             <!-- Pet Display Area -->
@@ -178,6 +178,13 @@
                     <div id="happinessBar" class="bg-gradient-to-r from-yellow-400 to-green-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
                 </div>
                 <p id="happinessText" class="text-lg text-gray-300 mb-4">Happiness: 0%</p>
+
+                <!-- Chewing Meter -->
+                <p id="chewingText" class="text-sm text-gray-400 mb-2 hidden">Chewing...</p>
+                <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden shadow-md mb-4 hidden" id="chewingMeterContainer">
+                    <div id="chewingMeter" class="bg-green-400 h-full rounded-full transition-all duration-100 ease-linear" style="width: 100%;"></div>
+                </div>
+
                 <div class="flex items-center space-x-2 mb-4">
                     <input type="text" id="petNameInput" class="bg-gray-700 text-white text-center text-xl p-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Enter pet name">
                     <button id="saveNameButton" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105">Save Name</button>
@@ -185,13 +192,10 @@
             </div>
 
             <!-- Food Selection Area -->
-            <div id="foodSelectionArea" class="grid grid-cols-3 gap-4 p-4 bg-gray-700 rounded-xl shadow-inner border border-gray-600">
-                <button class="food-item bg-blue-500 hover:bg-blue-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400" data-food="🍔">🍔</button>
-                <button class="food-item bg-yellow-500 hover:bg-yellow-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400" data-food="🍕">🍕</button>
-                <button class="food-item bg-red-500 hover:bg-red-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-400" data-food="🥕">🥕</button>
-                <button class="food-item bg-green-500 hover:bg-green-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400" data-food="🍎">🍎</button>
-                <button class="food-item bg-indigo-500 hover:bg-indigo-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400" data-food="🍦">🍦</button>
-                <button class="food-item bg-orange-500 hover:bg-orange-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-400" data-food="🍩">🍩</button>
+            <div class="p-4 bg-gray-700 rounded-xl shadow-inner border border-gray-600 max-h-[25vh] overflow-y-auto custom-scrollbar">
+                <div id="foodSelectionGrid" class="grid grid-cols-3 gap-4">
+                    <!-- Food items will be rendered here by JS -->
+                </div>
             </div>
         </div>
     </div>
@@ -229,7 +233,7 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, updateDoc, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         // IMPORTANT: Replace this with your actual Firebase project config.
@@ -260,6 +264,8 @@
         let selectedPetId = null;
         let unsubscribePets = null; // To store the unsubscribe function for real-time listener
         let speechBubbleTimer = null; // To manage the speech bubble interval
+        let chewingTimer = null; // Global variable to hold the chewing animation frame ID
+        let currentChewingPetId = null; // To track which pet is currently chewing
 
         // --- UI Elements ---
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -271,9 +277,12 @@
         const petMoodEmoji = document.getElementById('petMoodEmoji');
         const happinessBar = document.getElementById('happinessBar');
         const happinessText = document.getElementById('happinessText');
+        const chewingText = document.getElementById('chewingText'); // New chewing text element
+        const chewingMeterContainer = document.getElementById('chewingMeterContainer'); // New chewing meter container
+        const chewingMeter = document.getElementById('chewingMeter'); // New chewing meter bar
         const petNameInput = document.getElementById('petNameInput');
         const saveNameButton = document.getElementById('saveNameButton');
-        const foodSelectionArea = document.getElementById('foodSelectionArea');
+        const foodSelectionGrid = document.getElementById('foodSelectionGrid'); // Changed to foodSelectionGrid
         let speechBubble = null; // Changed to `let` and initialized to `null`
 
         // Modals
@@ -288,7 +297,7 @@
 
         // --- Pet Types and Food Data ---
         const petTypes = [
-            { id: 'cat', emoji: '�', name: 'Cat' },
+            { id: 'cat', emoji: '🐱', name: 'Cat' },
             { id: 'dog', emoji: '🐶', name: 'Dog' },
             { id: 'bunny', emoji: '🐰', name: 'Bunny' },
             { id: 'hamster', emoji: '🐹', name: 'Hamster' },
@@ -296,14 +305,59 @@
             { id: 'bird', emoji: '🐦', name: 'Bird' }
         ];
 
+        // Default happiness values for foods if no specific preference is found
         const foodItems = [
-            { emoji: '🍔', happiness: 15 },
-            { emoji: '🍕', happiness: 12 },
-            { emoji: '🥕', happiness: 10 },
-            { emoji: '🍎', happiness: 8 },
-            { emoji: '🍦', happiness: 20 },
-            { emoji: '🍩', happiness: 18 }
+            { emoji: '🍔', defaultHappiness: 15, color: 'blue' },
+            { emoji: '🍕', defaultHappiness: 12, color: 'yellow' },
+            { emoji: '🥕', defaultHappiness: 10, color: 'red' },
+            { emoji: '🍎', defaultHappiness: 8, color: 'green' },
+            { emoji: '🍦', defaultHappiness: 20, color: 'indigo' },
+            { emoji: '🍩', defaultHappiness: 18, color: 'orange' },
+            { emoji: '🐟', defaultHappiness: 25, color: 'cyan' }, // New food
+            { emoji: '🍖', defaultHappiness: 20, color: 'brown' }, // New food
+            { emoji: '🥛', defaultHappiness: 5, color: 'gray' },   // New food
+            { emoji: '🥦', defaultHappiness: 7, color: 'emerald' }, // New food
+            { emoji: '🧀', defaultHappiness: 10, color: 'amber' }, // New food
+            { emoji: '🌰', defaultHappiness: 8, color: 'lime' }    // New food
         ];
+
+        // Specific pet food preferences (override defaultHappiness)
+        const petFoodPreferences = {
+            'cat': [
+                { emoji: '🍔', change: -10, message: "Yuck, not a fan of burgers!" },
+                { emoji: '🥕', change: -5, message: "Carrots? No thanks." },
+                { emoji: '🐟', change: 30, message: "Meow! My favorite fish!" },
+                { emoji: '🥛', change: 15, message: "Purrrr, delicious milk!" }
+            ],
+            'dog': [
+                { emoji: '🍔', change: 20, message: "Woof! My favorite burger!" },
+                { emoji: '🍕', change: 15, message: "Pizza time!" },
+                { emoji: '🐟', change: -5, message: "Fish? I prefer meat!" },
+                { emoji: '🍖', change: 30, message: "Bone! Best treat ever!" },
+                { emoji: '🥦', change: -10, message: "No veggies for me!" }
+            ],
+            'bunny': [
+                { emoji: '🥕', change: 25, message: "Munch munch! Carrots are the best!" },
+                { emoji: '🍎', change: 15, message: "A juicy apple, just for me!" },
+                { emoji: '🍔', change: -20, message: "Ew, what is this?" },
+                { emoji: '�', change: 10, message: "Broccoli is yummy!" }
+            ],
+            'hamster': [
+                { emoji: '🌰', change: 25, message: "Squeak! A tasty nut!" },
+                { emoji: '🍎', change: 10, message: "Sweet apple for a little guy!" },
+                { emoji: '🍩', change: -10, message: "Too sweet for me!" }
+            ],
+            'fish': [
+                { emoji: '🥦', change: -5, message: "I don't eat that!" },
+                { emoji: '🐟', change: -10, message: "Hey, that's my cousin!" } // Fish don't eat fish
+            ],
+            'bird': [
+                { emoji: '🍎', change: 18, message: "Chirp chirp! A fruity treat!" },
+                { emoji: '🥕', change: 5, message: "A little crunch!" },
+                { emoji: '🍔', change: -15, message: "Not for birds!" }
+            ]
+        };
+
 
         const petMessages = [
             "Hi there!",
@@ -402,15 +456,18 @@
                 petMoodEmoji.textContent = '';
                 happinessBar.style.width = '0%';
                 happinessText.textContent = 'Happiness: 0%';
+                chewingMeterContainer.classList.add('hidden'); // Hide chewing meter
+                chewingText.classList.add('hidden'); // Hide chewing text
                 petNameInput.value = '';
                 petNameInput.disabled = true;
                 saveNameButton.disabled = true;
-                foodSelectionArea.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
+                foodSelectionGrid.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
                 stopSpeechBubbleTimer(); // Stop speech bubble if no pets
+                stopChewingMeter(); // Stop chewing meter if no pets
                 return;
             }
 
-            foodSelectionArea.classList.remove('pointer-events-none', 'opacity-50'); // Enable food area
+            foodSelectionGrid.classList.remove('pointer-events-none', 'opacity-50'); // Enable food area
 
             userPets.forEach(pet => {
                 const petElement = document.createElement('div');
@@ -484,15 +541,18 @@
                 petMoodEmoji.textContent = '';
                 happinessBar.style.width = '0%';
                 happinessText.textContent = 'Happiness: 0%';
+                chewingMeterContainer.classList.add('hidden'); // Hide chewing meter
+                chewingText.classList.add('hidden'); // Hide chewing text
                 petNameInput.value = '';
                 petNameInput.disabled = true;
                 saveNameButton.disabled = true;
-                foodSelectionArea.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
+                foodSelectionGrid.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
                 stopSpeechBubbleTimer(); // Stop speech bubble if no pets
+                stopChewingMeter(); // Stop chewing meter if no pets
                 return;
             }
 
-            foodSelectionArea.classList.remove('pointer-events-none', 'opacity-50'); // Enable food area
+            foodSelectionGrid.classList.remove('pointer-events-none', 'opacity-50'); // Enable food area
             petNameInput.disabled = false;
             saveNameButton.disabled = false;
 
@@ -530,8 +590,59 @@
             void happinessBar.offsetWidth; // Trigger reflow
             happinessBar.classList.add('animate-pulse-happiness');
 
+            renderFoodOptions(pet.type); // Render food options based on pet type
             startSpeechBubbleTimer(pet.type); // Start speech bubble for the selected pet
+
+            // Chewing Meter logic for selected pet
+            const now = Date.now();
+            // Check if lastFed is a Firestore Timestamp object or null
+            const lastFedTime = pet.lastFed ? pet.lastFed.toDate().getTime() : 0;
+            const cooldownEndTime = lastFedTime + FEED_COOLDOWN_MS;
+
+            if (pet.lastFed && cooldownEndTime > now) { // Only show if lastFed exists and cooldown is active
+                startChewingMeter(pet.id, cooldownEndTime - now); // Start with remaining time
+            } else {
+                stopChewingMeter(); // Ensure it's hidden if cooldown is over or never fed
+            }
         }
+
+        /**
+         * Renders the food options dynamically based on pet type.
+         * @param {string} currentPetType The type of the currently selected pet.
+         */
+        function renderFoodOptions(currentPetType) {
+            foodSelectionGrid.innerHTML = ''; // Clear existing food buttons
+
+            foodItems.forEach(food => {
+                const foodButton = document.createElement('button');
+                // Split the class string into individual classes and add them
+                const foodColorClasses = [`bg-${food.color}-500`, `hover:bg-${food.color}-600`];
+
+                foodButton.classList.add(
+                    'food-item',
+                    ...foodColorClasses, // Use spread operator to add multiple classes
+                    'text-white',
+                    'text-4xl',
+                    'py-4',
+                    'rounded-xl',
+                    'shadow-md',
+                    'transition',
+                    'duration-200',
+                    'ease-in-out',
+                    'transform',
+                    'hover:scale-105',
+                    'focus:outline-none',
+                    `focus:ring-2`,
+                    `focus:ring-${food.color}-400`
+                );
+                foodButton.dataset.food = food.emoji;
+                foodButton.innerHTML = food.emoji;
+
+                foodButton.addEventListener('click', () => feedPet(food));
+                foodSelectionGrid.appendChild(foodButton);
+            });
+        }
+
 
         /**
          * Selects a pet to display and interact with.
@@ -567,7 +678,27 @@
                 return;
             }
 
-            const newHappiness = Math.min(MAX_HAPPINESS, petToFeed.happiness + food.happiness);
+            let happinessChange = food.defaultHappiness; // Start with default change
+            let feedbackMessage = `${petToFeed.name} loved the ${food.emoji}! Happiness increased by ${food.defaultHappiness}%.`;
+
+            // Check for specific pet food preferences
+            const petSpecificPreferences = petFoodPreferences[petToFeed.type];
+            if (petSpecificPreferences) {
+                const specificPreference = petSpecificPreferences.find(pref => pref.emoji === food.emoji);
+                if (specificPreference) {
+                    happinessChange = specificPreference.change;
+                    feedbackMessage = specificPreference.message; // Use specific message if available
+                    if (happinessChange < 0) {
+                        feedbackMessage = `${petToFeed.name} disliked the ${food.emoji}! ${feedbackMessage || `Happiness decreased by ${Math.abs(happinessChange)}%.`}`;
+                    } else if (happinessChange > 0) {
+                        feedbackMessage = `${petToFeed.name} loved the ${food.emoji}! ${feedbackMessage || `Happiness increased by ${happinessChange}%.`}`;
+                    } else {
+                        feedbackMessage = `${petToFeed.name} was indifferent to the ${food.emoji}.`;
+                    }
+                }
+            }
+
+            const newHappiness = Math.max(0, Math.min(MAX_HAPPINESS, petToFeed.happiness + happinessChange));
 
             try {
                 // Update the pet in the public collection
@@ -591,7 +722,8 @@
                     foodEmojiElement.remove();
                 }, 500); // Remove after animation
 
-                showMessageModal(`${petToFeed.name} loved the ${food.emoji}! Happiness increased to ${newHappiness}%.`);
+                showMessageModal(feedbackMessage);
+                startChewingMeter(selectedPetId, FEED_COOLDOWN_MS); // Start chewing meter after feeding
 
             } catch (error) {
                 console.error("Error feeding pet:", error);
@@ -706,6 +838,68 @@
             }
         }
 
+        /**
+         * Starts the chewing meter animation.
+         * @param {string} petId The ID of the pet that is chewing.
+         * @param {number} initialDuration The initial duration of the chewing (e.g., FEED_COOLDOWN_MS or remaining time).
+         */
+        function startChewingMeter(petId, initialDuration) {
+            stopChewingMeter(); // Stop any existing meter
+
+            currentChewingPetId = petId;
+            const startTime = Date.now();
+            const cooldownDuration = initialDuration; // Use initialDuration for calculation
+
+            chewingMeterContainer.classList.remove('hidden');
+            chewingText.classList.remove('hidden');
+
+            // Determine if it's a fresh chew (full animation) or a re-render (snap to current progress)
+            const isFreshChew = (initialDuration === FEED_COOLDOWN_MS);
+
+            if (!isFreshChew) {
+                // If not a fresh chew, snap to current progress instantly
+                chewingMeter.classList.remove('transition-all'); // Temporarily remove transition
+                const currentPercentage = (initialDuration / FEED_COOLDOWN_MS) * 100;
+                chewingMeter.style.width = `${currentPercentage}%`;
+                void chewingMeter.offsetWidth; // Force reflow to apply style instantly
+                chewingMeter.classList.add('transition-all'); // Re-add transition for subsequent animation
+            } else {
+                // For a fresh chew, ensure transition is active and start from full
+                chewingMeter.classList.add('transition-all');
+                chewingMeter.style.width = `100%`; // Start from full for the animation
+            }
+
+
+            function animateChewing() {
+                const elapsedTime = Date.now() - startTime;
+                const remainingTime = cooldownDuration - elapsedTime;
+
+                if (remainingTime > 0) {
+                    const percentage = (remainingTime / cooldownDuration) * 100;
+                    chewingMeter.style.width = `${percentage}%`;
+                    chewingTimer = requestAnimationFrame(animateChewing);
+                } else {
+                    stopChewingMeter();
+                }
+            }
+            chewingTimer = requestAnimationFrame(animateChewing);
+        }
+
+        /**
+         * Stops the chewing meter animation and hides the meter.
+         */
+        function stopChewingMeter() {
+            if (chewingTimer) {
+                cancelAnimationFrame(chewingTimer);
+                chewingTimer = null;
+            }
+            chewingMeterContainer.classList.add('hidden');
+            chewingText.classList.add('hidden');
+            currentChewingPetId = null;
+            chewingMeter.classList.add('transition-all'); // Ensure transition is back for next fresh chew
+        }
+
+
         // --- Event Listeners ---
         messageModalCloseButton.addEventListener('click', hideMessageModal);
 
@@ -766,7 +960,7 @@
                     name: newName,
                     type: selectedType,
                     happiness: 50, // Starting happiness
-                    lastFed: serverTimestamp(), // Set initial lastFed to now for decay calculation
+                    lastFed: null, // Set lastFed to null so it's not immediately in cooldown
                     createdAt: serverTimestamp()
                 });
                 addPetModal.classList.add('hidden');
@@ -789,7 +983,8 @@
             }
         });
 
-        foodSelectionArea.addEventListener('click', (event) => {
+        // Event listener for the food selection grid (delegated)
+        foodSelectionGrid.addEventListener('click', (event) => {
             const foodButton = event.target.closest('.food-item');
             if (foodButton) {
                 const foodEmoji = foodButton.dataset.food;
@@ -833,6 +1028,8 @@
 
             } else {
                 try {
+                    // Always attempt anonymous sign-in first for general use.
+                    // The __initial_auth_token is primarily for Canvas environment authentication.
                     await signInAnonymously(auth);
                     console.log("Signed in anonymously.");
                 } catch (error) {
