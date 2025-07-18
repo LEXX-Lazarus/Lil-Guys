@@ -1,6 +1,5 @@
 # Lil Guys Pet Care Web App
 
-https://lil-guys.web.app/
 This is a simple, real-time web application designed for you and your partner (or a small group!) to collectively care for a shared collection of virtual "Lil Guys" pets.
 
 ## Features:
@@ -11,7 +10,11 @@ This is a simple, real-time web application designed for you and your partner (o
 
 * **Feed Your Pets:** Keep your "Lil Guys" happy by feeding them various treats, which increases their happiness level.
 
-* **Real-time Updates:** Changes made by one user (feeding a pet, adding a new one) are instantly reflected for everyone.
+* **Happiness Decay:** Pets' happiness levels will gradually decrease over time (every 12 hours), adding a realistic care element and encouraging regular interaction.
+
+* **Speech Bubbles:** Your "Lil Guys" can now express themselves! Speech bubbles will periodically appear above your selected pet, showing various messages based on their mood and type.
+
+* **Real-time Updates:** Changes made by one user (feeding a pet, adding a new one, or happiness decay) are instantly reflected for everyone.
 
 * **Happiness Tracking:** Monitor each pet's happiness level with a visual bar and mood emoji.
 

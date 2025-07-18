@@ -18,8 +18,10 @@
 
         /* Ensure the app takes full screen when added to home screen */
         html, body {
-            height: 100%;
+            min-height: 100vh; /* Use min-height to ensure it's at least viewport height */
             margin: 0;
+            display: flex; /* Make body a flex container */
+            flex-direction: column; /* Stack children vertically */
             /* Removed overflow: hidden; to allow vertical scrolling on smaller screens */
         }
 
@@ -88,6 +90,43 @@
             text-align: center;
             border: 2px solid #a78bfa; /* purple-400 */
         }
+
+        /* Speech Bubble Styles */
+        .speech-bubble {
+            position: absolute;
+            background: #fff;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem; /* text-sm */
+            color: #1a202c; /* text-gray-900 */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            /* Removed white-space: nowrap; to allow text wrapping on small screens */
+            z-index: 50;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            max-width: 150px; /* Limit width to prevent excessive horizontal growth */
+            text-align: center;
+        }
+
+        .speech-bubble.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Triangle for speech bubble */
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            border-top-color: #fff;
+            border-bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: -10px;
+        }
     </style>
 
     <!-- PWA / iOS Home Screen Meta Tags -->
@@ -110,10 +149,10 @@
     </div>
 
     <!-- Main App Container -->
-    <div class="bg-gray-900 bg-opacity-80 backdrop-blur-sm p-6 md:p-8 rounded-3xl shadow-2xl text-center max-w-4xl w-full flex flex-col md:flex-row gap-6 border border-purple-600">
+    <div class="bg-gray-900 bg-opacity-80 backdrop-blur-sm p-6 md:p-8 rounded-3xl shadow-2xl text-center max-w-4xl w-full flex flex-col md:flex-row gap-6 border border-purple-600 flex-grow">
 
         <!-- Left Panel: Pet List -->
-        <div class="md:w-1/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col shadow-inner">
+        <div class="md:w-1/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col shadow-inner h-full">
             <h2 class="text-2xl font-bold mb-4 text-purple-300">My Pets</h2>
             <div id="petList" class="flex-grow overflow-y-auto custom-scrollbar space-y-3 pr-2">
                 <!-- Pet items will be rendered here -->
@@ -124,7 +163,7 @@
         </div>
 
         <!-- Right Panel: Selected Pet Display & Interaction -->
-        <div class="md:w-2/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col justify-between shadow-inner">
+        <div class="md:w-2/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col justify-between shadow-inner pt-20">
             <h2 id="selectedPetName" class="text-3xl font-extrabold mb-4 text-pink-300">Select a Pet</h2>
 
             <!-- Pet Display Area -->
@@ -132,6 +171,8 @@
                 <div id="petImageContainer" class="relative w-48 h-48 mb-4 flex items-center justify-center">
                     <!-- Pet image will be rendered here -->
                     <span id="petMoodEmoji" class="absolute bottom-0 right-0 text-4xl transform translate-x-4 translate-y-4"></span>
+                    <!-- Speech Bubble Element -->
+                    <div id="speechBubble" class="speech-bubble absolute -top-16 left-1/2 -translate-x-1/2 hidden"></div>
                 </div>
                 <div class="w-full bg-gray-700 rounded-full h-4 mb-4 overflow-hidden shadow-md">
                     <div id="happinessBar" class="bg-gradient-to-r from-yellow-400 to-green-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
@@ -147,7 +188,7 @@
             <div id="foodSelectionArea" class="grid grid-cols-3 gap-4 p-4 bg-gray-700 rounded-xl shadow-inner border border-gray-600">
                 <button class="food-item bg-blue-500 hover:bg-blue-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400" data-food="🍔">🍔</button>
                 <button class="food-item bg-yellow-500 hover:bg-yellow-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400" data-food="🍕">🍕</button>
-                <button class="food-item bg-red-500 hover:bg-red-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-400" data-food="🥕">🥕</button>
+                <button class="food-item bg-red-500 hover:bg-red-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-400" data-food="🥕">🥕</button>
                 <button class="food-item bg-green-500 hover:bg-green-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400" data-food="🍎">🍎</button>
                 <button class="food-item bg-indigo-500 hover:bg-indigo-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400" data-food="🍦">🍦</button>
                 <button class="food-item bg-orange-500 hover:bg-orange-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-400" data-food="🍩">🍩</button>
@@ -188,14 +229,8 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-        // If you need analytics, also import:
-        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
-
-        // Global variables for Firebase (provided by Canvas environment)
-        // These are undefined when running the HTML file locally.
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, doc, collection, query, onSnapshot, updateDoc, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         // IMPORTANT: Replace this with your actual Firebase project config.
         // Go to Firebase Console -> Project settings -> Your apps -> Web app -> Config
@@ -211,24 +246,20 @@
 
         // Log the firebaseConfig being used for debugging
         console.log("Firebase Config:", firebaseConfig);
-        console.log("Initial Auth Token (from Canvas environment):", initialAuthToken);
-
 
         // Use firebaseConfig.projectId as appId for consistency in data paths
         const appId = firebaseConfig.projectId;
 
-
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        // If you need analytics, initialize it here:
-        // const analytics = getAnalytics(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        let currentUserId = null; // Will still store the user's unique ID
+        let currentUserId = null;
         let userPets = [];
         let selectedPetId = null;
         let unsubscribePets = null; // To store the unsubscribe function for real-time listener
+        let speechBubbleTimer = null; // To manage the speech bubble interval
 
         // --- UI Elements ---
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -243,6 +274,7 @@
         const petNameInput = document.getElementById('petNameInput');
         const saveNameButton = document.getElementById('saveNameButton');
         const foodSelectionArea = document.getElementById('foodSelectionArea');
+        let speechBubble = null; // Changed to `let` and initialized to `null`
 
         // Modals
         const addPetModal = document.getElementById('addPetModal');
@@ -256,12 +288,12 @@
 
         // --- Pet Types and Food Data ---
         const petTypes = [
-            { id: 'cat', emoji: '🐱', name: 'Cat' },
+            { id: 'cat', emoji: '�', name: 'Cat' },
             { id: 'dog', emoji: '🐶', name: 'Dog' },
             { id: 'bunny', emoji: '🐰', name: 'Bunny' },
             { id: 'hamster', emoji: '🐹', name: 'Hamster' },
             { id: 'fish', emoji: '🐠', name: 'Fish' },
-            { id: 'bird', emoji: '�', name: 'Bird' }
+            { id: 'bird', emoji: '🐦', name: 'Bird' }
         ];
 
         const foodItems = [
@@ -273,8 +305,37 @@
             { emoji: '🍩', happiness: 18 }
         ];
 
+        const petMessages = [
+            "Hi there!",
+            "I'm so happy!",
+            "Feed me, please!",
+            "What's up?",
+            "Play with me!",
+            "I love you!",
+            "So cozy here.",
+            "I'm feeling good!",
+            "Woof! (or Meow!)",
+            "Time for a nap?",
+            "You're the best!",
+            "Feeling playful!",
+            "I'm hungry!",
+            "Pat me!",
+            "Happy to see you!",
+            "Let's have fun!",
+            "Good to be here.",
+            "I'm a Lil Guy!",
+            "Feeling cute!",
+            "Purrrr...", // Cat specific
+            "Bark bark!", // Dog specific
+            "Chirp chirp!", // Bird specific
+            "Squeak!", // Hamster specific
+            "Wiggle wiggle!" // Fish specific
+        ];
+
         const MAX_HAPPINESS = 100;
         const FEED_COOLDOWN_MS = 10 * 1000; // 10 seconds cooldown
+        const HAPPINESS_DECAY_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+        const HAPPINESS_DECAY_AMOUNT = 30; // 30% decrease
 
         // --- Utility Functions ---
 
@@ -295,6 +356,41 @@
         }
 
         /**
+         * Calculates and applies happiness decay based on time elapsed.
+         * @param {object} pet The pet object to apply decay to.
+         * @returns {number} The new happiness value after decay.
+         */
+        function applyHappinessDecay(pet) {
+            const now = Date.now();
+            // Use lastFed if available, otherwise createdAt
+            const lastInteractionTime = pet.lastFed ? pet.lastFed.toDate().getTime() : (pet.createdAt ? pet.createdAt.toDate().getTime() : now);
+            const timeSinceLastInteraction = now - lastInteractionTime;
+
+            let decayedHappiness = pet.happiness;
+            let periodsOfDecay = 0;
+
+            if (timeSinceLastInteraction > 0) {
+                periodsOfDecay = Math.floor(timeSinceLastInteraction / HAPPINESS_DECAY_INTERVAL_MS);
+            }
+
+            if (periodsOfDecay > 0) {
+                decayedHappiness = Math.max(0, pet.happiness - (periodsOfDecay * HAPPINESS_DECAY_AMOUNT));
+                console.log(`${pet.name} decayed by ${periodsOfDecay * HAPPINESS_DECAY_AMOUNT}% (${periodsOfDecay} periods). New happiness: ${decayedHappiness}`);
+                // Update the pet in Firestore immediately to reflect decay
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, pet.id);
+                updateDoc(petRef, {
+                    happiness: decayedHappiness,
+                    // Update lastFed to now so decay calculation resets
+                    lastFed: serverTimestamp()
+                }).catch(error => {
+                    console.error("Error updating pet happiness after decay:", error);
+                });
+            }
+            return decayedHappiness;
+        }
+
+
+        /**
          * Renders the list of pets in the left panel.
          */
         function renderPetList() {
@@ -310,6 +406,7 @@
                 petNameInput.disabled = true;
                 saveNameButton.disabled = true;
                 foodSelectionArea.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
+                stopSpeechBubbleTimer(); // Stop speech bubble if no pets
                 return;
             }
 
@@ -391,6 +488,7 @@
                 petNameInput.disabled = true;
                 saveNameButton.disabled = true;
                 foodSelectionArea.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
+                stopSpeechBubbleTimer(); // Stop speech bubble if no pets
                 return;
             }
 
@@ -403,7 +501,13 @@
 
             const petType = petTypes.find(type => type.id === pet.type);
             const petEmoji = petType ? petType.emoji : '❓';
-            petImageContainer.innerHTML = `<span class="text-9xl">${petEmoji}</span>`; // Display pet emoji
+            petImageContainer.innerHTML = `
+                <span class="text-9xl">${petEmoji}</span>
+                <div id="speechBubble" class="speech-bubble absolute -top-16 left-1/2 -translate-x-1/2 hidden"></div>
+            `; // Re-render pet emoji and speech bubble container
+
+            // IMPORTANT FIX: Re-assign the global speechBubble variable to the newly created element
+            speechBubble = document.getElementById('speechBubble');
 
             // Update happiness bar
             const happinessPercentage = Math.max(0, Math.min(100, pet.happiness));
@@ -425,6 +529,8 @@
             happinessBar.classList.remove('animate-pulse-happiness');
             void happinessBar.offsetWidth; // Trigger reflow
             happinessBar.classList.add('animate-pulse-happiness');
+
+            startSpeechBubbleTimer(pet.type); // Start speech bubble for the selected pet
         }
 
         /**
@@ -432,6 +538,7 @@
          * @param {string} id The ID of the pet to select.
          */
         function selectPet(id) {
+            if (selectedPetId === id) return; // Prevent re-rendering if same pet selected
             selectedPetId = id;
             renderPetList(); // Re-render list to highlight selected pet
             renderPetDisplay(userPets.find(p => p.id === selectedPetId));
@@ -464,10 +571,10 @@
 
             try {
                 // Update the pet in the public collection
-                const petRef = doc(db, `artifacts/${appId}/sharedPets`, selectedPetId); // Updated path
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, selectedPetId);
                 await updateDoc(petRef, {
                     happiness: newHappiness,
-                    lastFed: serverTimestamp() // Update last fed timestamp
+                    lastFed: serverTimestamp() // Update last fed timestamp to now
                 });
 
                 // Visual feedback for feeding
@@ -508,7 +615,7 @@
 
             try {
                 // Update the pet's name in the public collection
-                const petRef = doc(db, `artifacts/${appId}/sharedPets`, selectedPetId); // Updated path
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, selectedPetId);
                 await updateDoc(petRef, { name: newName });
                 showMessageModal(`Name updated to "${newName}"!`);
             } catch (error) {
@@ -532,7 +639,7 @@
 
             try {
                 // Delete the pet from the public collection
-                const petRef = doc(db, `artifacts/${appId}/sharedPets`, petId); // Updated path
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, petId);
                 await deleteDoc(petRef);
                 showMessageModal("Pet successfully adopted out!");
                 if (selectedPetId === petId) {
@@ -541,6 +648,61 @@
             } catch (error) {
                 console.error("Error deleting pet:", error);
                 showMessageModal("Failed to delete pet. Please try again.");
+            }
+        }
+
+        /**
+         * Starts the speech bubble timer for the selected pet.
+         * @param {string} petType The type of the selected pet (e.g., 'cat', 'dog').
+         */
+        function startSpeechBubbleTimer(petType) {
+            stopSpeechBubbleTimer(); // Clear any existing timer
+
+            const filteredMessages = petMessages.filter(msg => {
+                // Basic filtering for pet-specific messages
+                if (petType === 'cat' && msg.includes('Purrrr')) return true;
+                if (petType === 'dog' && msg.includes('Bark')) return true;
+                if (petType === 'bird' && msg.includes('Chirp')) return true;
+                if (petType === 'hamster' && msg.includes('Squeak')) return true;
+                if (petType === 'fish' && msg.includes('Wiggle')) return true;
+                // Include general messages
+                return !msg.includes('Purrrr') && !msg.includes('Bark') && !msg.includes('Chirp') && !msg.includes('Squeak') && !msg.includes('Wiggle');
+            });
+
+
+            speechBubbleTimer = setInterval(() => {
+                // Ensure speechBubble is not null before trying to use it
+                if (selectedPetId && speechBubble) {
+                    const randomMessage = filteredMessages[Math.floor(Math.random() * filteredMessages.length)];
+                    speechBubble.textContent = randomMessage;
+                    speechBubble.classList.remove('hidden');
+                    speechBubble.classList.add('show'); // Trigger show animation
+
+                    setTimeout(() => {
+                        speechBubble.classList.remove('show');
+                        // Hide completely after transition
+                        setTimeout(() => {
+                            speechBubble.classList.add('hidden');
+                        }, 300); // Match CSS transition duration
+                    }, 3000); // Message visible for 3 seconds
+                } else {
+                    stopSpeechBubbleTimer(); // Stop if no pet is selected or speechBubble element is not found
+                }
+            }, 5000); // New message every 5 seconds
+        }
+
+        /**
+         * Stops the speech bubble timer and hides the bubble.
+         */
+        function stopSpeechBubbleTimer() {
+            if (speechBubbleTimer) {
+                clearInterval(speechBubbleTimer);
+                speechBubbleTimer = null;
+            }
+            // Ensure speechBubble is not null before trying to use it
+            if (speechBubble) {
+                speechBubble.classList.remove('show');
+                speechBubble.classList.add('hidden');
             }
         }
 
@@ -600,15 +762,15 @@
 
             try {
                 // Add a new pet document to the public collection
-                const docRef = await addDoc(collection(db, `artifacts/${appId}/sharedPets`), { // Updated path
+                const docRef = await addDoc(collection(db, `artifacts/${appId}/sharedPets`), {
                     name: newName,
                     type: selectedType,
                     happiness: 50, // Starting happiness
-                    lastFed: null, // No last fed time initially
+                    lastFed: serverTimestamp(), // Set initial lastFed to now for decay calculation
                     createdAt: serverTimestamp()
                 });
                 addPetModal.classList.add('hidden');
-                showMessageModal(`Welcome ${newName} to your family!`);
+                showMessageModal(`Welcome ${newName} to your Lil Guys family!`);
                 selectPet(docRef.id); // Select the newly added pet
             } catch (error) {
                 console.error("Error adding new pet:", error);
@@ -641,47 +803,50 @@
         // --- Firebase Authentication and Data Listener ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                currentUserId = user.uid; // Still get the user ID, even if not used directly for data path
-                userIdDisplay.textContent = currentUserId; // Display it for debugging/info
+                currentUserId = user.uid;
+                userIdDisplay.textContent = currentUserId;
                 console.log("Authenticated with user ID:", currentUserId);
-                console.log("Authenticated user object:", user); // Log the user object
 
-                // Unsubscribe from previous listener if exists
                 if (unsubscribePets) {
                     unsubscribePets();
                 }
 
-                // Set up real-time listener for the SHARED pets collection
-                const q = query(collection(db, `artifacts/${appId}/sharedPets`)); // Updated path
+                const q = query(collection(db, `artifacts/${appId}/sharedPets`));
                 unsubscribePets = onSnapshot(q, (snapshot) => {
-                    userPets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    userPets.sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0)); // Sort by creation time
+                    let updatedPets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    // Apply decay to each pet as it's loaded/updated
+                    updatedPets = updatedPets.map(pet => {
+                        const decayedHappiness = applyHappinessDecay(pet);
+                        return { ...pet, happiness: decayedHappiness };
+                    });
+
+                    userPets = updatedPets;
+                    userPets.sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0));
                     renderPetList();
-                    loadingOverlay.classList.add('hidden'); // Hide loading after initial data load
+                    loadingOverlay.classList.add('hidden');
                 }, (error) => {
                     console.error("Error fetching pets:", error);
-                    showMessageModal("Failed to load pets. Please check your internet connection and Firebase rules.");
-                    loadingOverlay.classList.add('hidden'); // Hide loading even on error
+                    showMessageModal("Failed to load Lil Guys. Please check your internet connection and Firebase rules.");
+                    loadingOverlay.classList.add('hidden');
                 });
 
             } else {
-                // Not signed in, always attempt anonymous sign-in in a deployed environment
                 try {
                     await signInAnonymously(auth);
                     console.log("Signed in anonymously.");
                 } catch (error) {
                     console.error("Error during anonymous authentication:", error);
-                    console.error("Authentication error details:", error.code, error.message); // Log specific error details
                     showMessageModal("Failed to authenticate. Please try refreshing the page.");
-                    loadingOverlay.classList.add('hidden'); // Hide loading even on auth error
+                    loadingOverlay.classList.add('hidden');
                 }
             }
         });
 
         // --- PWA Manifest Setup (dynamic blob for self-contained immersive) ---
         const manifestContent = {
-            "name": "Lil Guys Pet Care", // Updated name
-            "short_name": "Lil Guys",    // Updated short name
+            "name": "Lil Guys Pet Care",
+            "short_name": "Lil Guys",
             "start_url": ".",
             "display": "standalone",
             "background_color": "#1f2937",
