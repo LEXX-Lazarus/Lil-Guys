@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lil Guys Pet Care</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for a pixelated feel, or a clean look */
+        body {
+            font-family: 'Press Start 2P', cursive; /* A pixelated font, if available */
+            font-family: 'Inter', sans-serif; /* Fallback for a clean look */
+            image-rendering: pixelated; /* Ensures pixel art stays sharp */
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        /* Ensure the app takes full screen when added to home screen */
+        html, body {
+            height: 100%;
+            margin: 0;
+            /* Removed overflow: hidden; to allow vertical scrolling on smaller screens */
+        }
+
+        /* Custom scrollbar for pet list */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #2d3748; /* bg-gray-800 */
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #a78bfa; /* bg-purple-400 */
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6; /* bg-purple-500 */
+        }
+
+        /* Keyframe for happiness animation */
+        @keyframes pulse-happiness {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pulse-happiness {
+            animation: pulse-happiness 0.5s ease-out;
+        }
+
+        /* Keyframe for food animation */
+        @keyframes pop-food {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop-food {
+            animation: pop-food 0.3s ease-out;
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #2d3748; /* bg-gray-800 */
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            border: 2px solid #a78bfa; /* purple-400 */
+        }
+    </style>
+
+    <!-- PWA / iOS Home Screen Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lil Guys">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/6b46c1/FFFFFF?text=🐾">
+
+    <!-- Basic Web App Manifest -->
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body class="bg-gradient-to-br from-purple-900 to-indigo-700 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
+            <p class="text-xl text-purple-300">Loading Lil Guys...</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="bg-gray-900 bg-opacity-80 backdrop-blur-sm p-6 md:p-8 rounded-3xl shadow-2xl text-center max-w-4xl w-full flex flex-col md:flex-row gap-6 border border-purple-600">
+
+        <!-- Left Panel: Pet List -->
+        <div class="md:w-1/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col shadow-inner">
+            <h2 class="text-2xl font-bold mb-4 text-purple-300">My Pets</h2>
+            <div id="petList" class="flex-grow overflow-y-auto custom-scrollbar space-y-3 pr-2">
+                <!-- Pet items will be rendered here -->
+            </div>
+            <button id="addPetButton" class="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75">
+                Adopt New Pet
+            </button>
+        </div>
+
+        <!-- Right Panel: Selected Pet Display & Interaction -->
+        <div class="md:w-2/3 w-full bg-gray-800 bg-opacity-70 p-4 rounded-2xl border border-gray-700 flex flex-col justify-between shadow-inner">
+            <h2 id="selectedPetName" class="text-3xl font-extrabold mb-4 text-pink-300">Select a Pet</h2>
+
+            <!-- Pet Display Area -->
+            <div id="petDisplayArea" class="flex flex-col items-center justify-center flex-grow mb-6">
+                <div id="petImageContainer" class="relative w-48 h-48 mb-4 flex items-center justify-center">
+                    <!-- Pet image will be rendered here -->
+                    <span id="petMoodEmoji" class="absolute bottom-0 right-0 text-4xl transform translate-x-4 translate-y-4"></span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-4 mb-4 overflow-hidden shadow-md">
+                    <div id="happinessBar" class="bg-gradient-to-r from-yellow-400 to-green-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
+                </div>
+                <p id="happinessText" class="text-lg text-gray-300 mb-4">Happiness: 0%</p>
+                <div class="flex items-center space-x-2 mb-4">
+                    <input type="text" id="petNameInput" class="bg-gray-700 text-white text-center text-xl p-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Enter pet name">
+                    <button id="saveNameButton" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:scale-105">Save Name</button>
+                </div>
+            </div>
+
+            <!-- Food Selection Area -->
+            <div id="foodSelectionArea" class="grid grid-cols-3 gap-4 p-4 bg-gray-700 rounded-xl shadow-inner border border-gray-600">
+                <button class="food-item bg-blue-500 hover:bg-blue-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400" data-food="🍔">🍔</button>
+                <button class="food-item bg-yellow-500 hover:bg-yellow-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400" data-food="🍕">🍕</button>
+                <button class="food-item bg-red-500 hover:bg-red-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-400" data-food="🥕">🥕</button>
+                <button class="food-item bg-green-500 hover:bg-green-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400" data-food="🍎">🍎</button>
+                <button class="food-item bg-indigo-500 hover:bg-indigo-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400" data-food="🍦">🍦</button>
+                <button class="food-item bg-orange-500 hover:bg-orange-600 text-white text-4xl py-4 rounded-xl shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-400" data-food="🍩">🍩</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User ID Display (now less relevant for shared data, but useful for debugging) -->
+    <div class="mt-4 p-2 bg-gray-900 bg-opacity-70 rounded-lg text-sm text-gray-400 shadow-md border border-gray-700">
+        Your User ID: <span id="userIdDisplay" class="font-mono text-purple-300">Loading...</span>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Pet Modal -->
+    <div id="addPetModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 text-purple-300">Choose Your New Pet!</h3>
+            <div id="petTypeSelection" class="grid grid-cols-3 gap-4 mb-6">
+                <!-- Pet types will be rendered here -->
+            </div>
+            <input type="text" id="newPetNameInput" class="bg-gray-700 text-white text-center text-xl p-2 rounded-lg border border-gray-600 w-full mb-6 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Name your new pet">
+            <div class="flex justify-around">
+                <button id="confirmAddPetButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Adopt</button>
+                <button id="cancelAddPetButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <p id="messageModalText" class="text-xl mb-6 text-gray-200"></p>
+            <button id="messageModalCloseButton" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-5 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">OK</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, doc, collection, query, onSnapshot, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        // If you need analytics, also import:
+        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+
+        // Global variables for Firebase (provided by Canvas environment)
+        // These are undefined when running the HTML file locally.
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // IMPORTANT: Replace this with your actual Firebase project config.
+        // Go to Firebase Console -> Project settings -> Your apps -> Web app -> Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdkD_covwMgVc1nMMEQwmH-1VGS5opJQ4", // Replace with your Firebase project's API Key
+            authDomain: "lil-guys.firebaseapp.com", // Replace with your Auth Domain
+            projectId: "lil-guys", // Replace with your Project ID
+            storageBucket: "lil-guys.firebasestorage.app", // Replace with your Storage Bucket (use .appspot.com if that's what Firebase console gives you)
+            messagingSenderId: "386443044463", // Replace with your Messaging Sender ID
+            appId: "1:386443044463:web:ae2f7054687dd68df60f9a", // Replace with your App ID
+            measurementId: "G-VHGG43XDXB" // Optional: if you use Google Analytics for Firebase
+        };
+
+        // Log the firebaseConfig being used for debugging
+        console.log("Firebase Config:", firebaseConfig);
+        console.log("Initial Auth Token (from Canvas environment):", initialAuthToken);
+
+
+        // Use firebaseConfig.projectId as appId for consistency in data paths
+        const appId = firebaseConfig.projectId;
+
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        // If you need analytics, initialize it here:
+        // const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUserId = null; // Will still store the user's unique ID
+        let userPets = [];
+        let selectedPetId = null;
+        let unsubscribePets = null; // To store the unsubscribe function for real-time listener
+
+        // --- UI Elements ---
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const petListContainer = document.getElementById('petList');
+        const addPetButton = document.getElementById('addPetButton');
+        const selectedPetNameElement = document.getElementById('selectedPetName');
+        const petImageContainer = document.getElementById('petImageContainer');
+        const petMoodEmoji = document.getElementById('petMoodEmoji');
+        const happinessBar = document.getElementById('happinessBar');
+        const happinessText = document.getElementById('happinessText');
+        const petNameInput = document.getElementById('petNameInput');
+        const saveNameButton = document.getElementById('saveNameButton');
+        const foodSelectionArea = document.getElementById('foodSelectionArea');
+
+        // Modals
+        const addPetModal = document.getElementById('addPetModal');
+        const petTypeSelection = document.getElementById('petTypeSelection');
+        const newPetNameInput = document.getElementById('newPetNameInput');
+        const confirmAddPetButton = document.getElementById('confirmAddPetButton');
+        const cancelAddPetButton = document.getElementById('cancelAddPetButton');
+        const messageModal = document.getElementById('messageModal');
+        const messageModalText = document.getElementById('messageModalText');
+        const messageModalCloseButton = document.getElementById('messageModalCloseButton');
+
+        // --- Pet Types and Food Data ---
+        const petTypes = [
+            { id: 'cat', emoji: '🐱', name: 'Cat' },
+            { id: 'dog', emoji: '🐶', name: 'Dog' },
+            { id: 'bunny', emoji: '🐰', name: 'Bunny' },
+            { id: 'hamster', emoji: '🐹', name: 'Hamster' },
+            { id: 'fish', emoji: '🐠', name: 'Fish' },
+            { id: 'bird', emoji: '�', name: 'Bird' }
+        ];
+
+        const foodItems = [
+            { emoji: '🍔', happiness: 15 },
+            { emoji: '🍕', happiness: 12 },
+            { emoji: '🥕', happiness: 10 },
+            { emoji: '🍎', happiness: 8 },
+            { emoji: '🍦', happiness: 20 },
+            { emoji: '🍩', happiness: 18 }
+        ];
+
+        const MAX_HAPPINESS = 100;
+        const FEED_COOLDOWN_MS = 10 * 1000; // 10 seconds cooldown
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a custom message modal.
+         * @param {string} message The message to display.
+         */
+        function showMessageModal(message) {
+            messageModalText.textContent = message;
+            messageModal.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the custom message modal.
+         */
+        function hideMessageModal() {
+            messageModal.classList.add('hidden');
+        }
+
+        /**
+         * Renders the list of pets in the left panel.
+         */
+        function renderPetList() {
+            petListContainer.innerHTML = ''; // Clear existing list
+            if (userPets.length === 0) {
+                petListContainer.innerHTML = '<p class="text-gray-400 text-center mt-4">No pets yet! Adopt one!</p>';
+                selectedPetNameElement.textContent = "Adopt a Pet!";
+                petImageContainer.innerHTML = '';
+                petMoodEmoji.textContent = '';
+                happinessBar.style.width = '0%';
+                happinessText.textContent = 'Happiness: 0%';
+                petNameInput.value = '';
+                petNameInput.disabled = true;
+                saveNameButton.disabled = true;
+                foodSelectionArea.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
+                return;
+            }
+
+            foodSelectionArea.classList.remove('pointer-events-none', 'opacity-50'); // Enable food area
+
+            userPets.forEach(pet => {
+                const petElement = document.createElement('div');
+                petElement.id = `pet-${pet.id}`;
+                petElement.classList.add(
+                    'pet-item',
+                    'p-3',
+                    'rounded-lg',
+                    'flex',
+                    'items-center',
+                    'space-x-3',
+                    'cursor-pointer',
+                    'transition-all',
+                    'duration-200',
+                    'ease-in-out',
+                    'hover:bg-gray-700',
+                    'border',
+                    'border-gray-700'
+                );
+
+                if (pet.id === selectedPetId) {
+                    petElement.classList.add('bg-purple-700', 'border-purple-500', 'shadow-lg');
+                } else {
+                    petElement.classList.add('bg-gray-700');
+                }
+
+                const petType = petTypes.find(type => type.id === pet.type);
+                const petEmoji = petType ? petType.emoji : '❓';
+
+                petElement.innerHTML = `
+                    <span class="text-4xl">${petEmoji}</span>
+                    <div class="flex-grow text-left">
+                        <p class="font-semibold text-lg text-white">${pet.name}</p>
+                        <p class="text-sm text-gray-300">Happiness: ${pet.happiness}%</p>
+                    </div>
+                    <button class="delete-pet-button bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded-full shadow transition duration-300 ease-in-out" data-pet-id="${pet.id}">Delete</button>
+                `;
+                petElement.addEventListener('click', () => selectPet(pet.id));
+                petListContainer.appendChild(petElement);
+
+                // Add event listener for delete button
+                petElement.querySelector('.delete-pet-button').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent selecting the pet when deleting
+                    deletePet(pet.id);
+                });
+            });
+
+            // If no pet is selected, or the selected pet was deleted, select the first one if available
+            if (!selectedPetId || !userPets.some(p => p.id === selectedPetId)) {
+                if (userPets.length > 0) {
+                    selectPet(userPets[0].id);
+                } else {
+                    // No pets left, reset display
+                    selectedPetId = null;
+                    renderPetDisplay(null);
+                }
+            } else {
+                // Re-render the currently selected pet to ensure its display is up-to-date
+                renderPetDisplay(userPets.find(p => p.id === selectedPetId));
+            }
+        }
+
+        /**
+         * Renders the details of the selected pet in the main display area.
+         * @param {object|null} pet The pet object to display, or null if no pet is selected.
+         */
+        function renderPetDisplay(pet) {
+            if (!pet) {
+                selectedPetNameElement.textContent = "Select a Pet";
+                petImageContainer.innerHTML = '<p class="text-gray-400 text-center">No pet selected.</p>';
+                petMoodEmoji.textContent = '';
+                happinessBar.style.width = '0%';
+                happinessText.textContent = 'Happiness: 0%';
+                petNameInput.value = '';
+                petNameInput.disabled = true;
+                saveNameButton.disabled = true;
+                foodSelectionArea.classList.add('pointer-events-none', 'opacity-50'); // Disable food area
+                return;
+            }
+
+            foodSelectionArea.classList.remove('pointer-events-none', 'opacity-50'); // Enable food area
+            petNameInput.disabled = false;
+            saveNameButton.disabled = false;
+
+            selectedPetNameElement.textContent = pet.name;
+            petNameInput.value = pet.name;
+
+            const petType = petTypes.find(type => type.id === pet.type);
+            const petEmoji = petType ? petType.emoji : '❓';
+            petImageContainer.innerHTML = `<span class="text-9xl">${petEmoji}</span>`; // Display pet emoji
+
+            // Update happiness bar
+            const happinessPercentage = Math.max(0, Math.min(100, pet.happiness));
+            happinessBar.style.width = `${happinessPercentage}%`;
+            happinessText.textContent = `Happiness: ${happinessPercentage}%`;
+
+            // Update mood emoji
+            let moodEmoji = '😐'; // Neutral
+            if (happinessPercentage >= 80) {
+                moodEmoji = '😊'; // Happy
+            } else if (happinessPercentage >= 50) {
+                moodEmoji = '🙂'; // Content
+            } else if (happinessPercentage < 20) {
+                moodEmoji = '😔'; // Sad
+            }
+            petMoodEmoji.textContent = moodEmoji;
+
+            // Add animation when happiness changes
+            happinessBar.classList.remove('animate-pulse-happiness');
+            void happinessBar.offsetWidth; // Trigger reflow
+            happinessBar.classList.add('animate-pulse-happiness');
+        }
+
+        /**
+         * Selects a pet to display and interact with.
+         * @param {string} id The ID of the pet to select.
+         */
+        function selectPet(id) {
+            selectedPetId = id;
+            renderPetList(); // Re-render list to highlight selected pet
+            renderPetDisplay(userPets.find(p => p.id === selectedPetId));
+        }
+
+        /**
+         * Handles feeding a pet.
+         * @param {object} food The food item object.
+         */
+        async function feedPet(food) {
+            if (!selectedPetId) {
+                showMessageModal("Please select a pet first!");
+                return;
+            }
+
+            const petToFeed = userPets.find(p => p.id === selectedPetId);
+            if (!petToFeed) {
+                showMessageModal("Selected pet not found.");
+                return;
+            }
+
+            // Check cooldown
+            if (petToFeed.lastFed && (Date.now() - petToFeed.lastFed.toDate().getTime() < FEED_COOLDOWN_MS)) {
+                const remainingTime = Math.ceil((FEED_COOLDOWN_MS - (Date.now() - petToFeed.lastFed.toDate().getTime())) / 1000);
+                showMessageModal(`Whoa there! ${petToFeed.name} is still chewing. Try again in ${remainingTime} seconds.`);
+                return;
+            }
+
+            const newHappiness = Math.min(MAX_HAPPINESS, petToFeed.happiness + food.happiness);
+
+            try {
+                // Update the pet in the public collection
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, selectedPetId); // Updated path
+                await updateDoc(petRef, {
+                    happiness: newHappiness,
+                    lastFed: serverTimestamp() // Update last fed timestamp
+                });
+
+                // Visual feedback for feeding
+                const foodEmojiElement = document.createElement('span');
+                foodEmojiElement.textContent = food.emoji;
+                foodEmojiElement.classList.add('absolute', 'text-6xl', 'animate-pop-food');
+                // Position it near the pet
+                const petRect = petImageContainer.getBoundingClientRect();
+                foodEmojiElement.style.left = `${petRect.left + petRect.width / 2 - 30}px`; // Center food over pet
+                foodEmojiElement.style.top = `${petRect.top + petRect.height / 2 - 30}px`;
+                document.body.appendChild(foodEmojiElement);
+
+                setTimeout(() => {
+                    foodEmojiElement.remove();
+                }, 500); // Remove after animation
+
+                showMessageModal(`${petToFeed.name} loved the ${food.emoji}! Happiness increased to ${newHappiness}%.`);
+
+            } catch (error) {
+                console.error("Error feeding pet:", error);
+                showMessageModal("Failed to feed pet. Please try again.");
+            }
+        }
+
+        /**
+         * Saves the custom name for the selected pet.
+         */
+        async function savePetName() {
+            if (!selectedPetId) {
+                showMessageModal("Please select a pet first!");
+                return;
+            }
+            const newName = petNameInput.value.trim();
+            if (!newName) {
+                showMessageModal("Pet name cannot be empty.");
+                return;
+            }
+
+            try {
+                // Update the pet's name in the public collection
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, selectedPetId); // Updated path
+                await updateDoc(petRef, { name: newName });
+                showMessageModal(`Name updated to "${newName}"!`);
+            } catch (error) {
+                console.error("Error updating pet name:", error);
+                showMessageModal("Failed to update pet name. Please try again.");
+            }
+        }
+
+        /**
+         * Deletes a pet from the shared collection.
+         * @param {string} petId The ID of the pet to delete.
+         */
+        async function deletePet(petId) {
+            // IMPORTANT: Use a custom modal for confirmation instead of `confirm()`
+            // as `confirm()` does not work in the Canvas environment.
+            // For now, I'll keep `confirm()` as a placeholder, but in a real app,
+            // you'd replace this with a custom UI modal.
+            if (!confirm(`Are you sure you want to say goodbye to this pet?`)) {
+                return; // User cancelled
+            }
+
+            try {
+                // Delete the pet from the public collection
+                const petRef = doc(db, `artifacts/${appId}/sharedPets`, petId); // Updated path
+                await deleteDoc(petRef);
+                showMessageModal("Pet successfully adopted out!");
+                if (selectedPetId === petId) {
+                    selectedPetId = null; // Deselect if the current pet is deleted
+                }
+            } catch (error) {
+                console.error("Error deleting pet:", error);
+                showMessageModal("Failed to delete pet. Please try again.");
+            }
+        }
+
+        // --- Event Listeners ---
+        messageModalCloseButton.addEventListener('click', hideMessageModal);
+
+        addPetButton.addEventListener('click', () => {
+            petTypeSelection.innerHTML = ''; // Clear previous options
+            petTypes.forEach(type => {
+                const typeButton = document.createElement('button');
+                typeButton.classList.add(
+                    'pet-type-button',
+                    'bg-gray-700',
+                    'hover:bg-purple-600',
+                    'text-white',
+                    'text-5xl',
+                    'py-4',
+                    'rounded-xl',
+                    'shadow-md',
+                    'transition',
+                    'duration-200',
+                    'ease-in-out',
+                    'transform',
+                    'hover:scale-105',
+                    'focus:outline-none',
+                    'focus:ring-2',
+                    'focus:ring-purple-400'
+                );
+                typeButton.innerHTML = `<span class="block">${type.emoji}</span><span class="text-sm">${type.name}</span>`;
+                typeButton.dataset.type = type.id;
+                typeButton.addEventListener('click', () => {
+                    // Remove selected class from others
+                    document.querySelectorAll('.pet-type-button').forEach(btn => btn.classList.remove('border-4', 'border-purple-400'));
+                    // Add selected class to current
+                    typeButton.classList.add('border-4', 'border-purple-400');
+                    addPetModal.dataset.selectedType = type.id;
+                });
+                petTypeSelection.appendChild(typeButton);
+            });
+            newPetNameInput.value = ''; // Clear input
+            addPetModal.dataset.selectedType = ''; // Reset selected type
+            addPetModal.classList.remove('hidden');
+        });
+
+        confirmAddPetButton.addEventListener('click', async () => {
+            const selectedType = addPetModal.dataset.selectedType;
+            const newName = newPetNameInput.value.trim();
+
+            if (!selectedType) {
+                showMessageModal("Please select a pet type!");
+                return;
+            }
+            if (!newName) {
+                showMessageModal("Please enter a name for your new pet!");
+                return;
+            }
+
+            try {
+                // Add a new pet document to the public collection
+                const docRef = await addDoc(collection(db, `artifacts/${appId}/sharedPets`), { // Updated path
+                    name: newName,
+                    type: selectedType,
+                    happiness: 50, // Starting happiness
+                    lastFed: null, // No last fed time initially
+                    createdAt: serverTimestamp()
+                });
+                addPetModal.classList.add('hidden');
+                showMessageModal(`Welcome ${newName} to your family!`);
+                selectPet(docRef.id); // Select the newly added pet
+            } catch (error) {
+                console.error("Error adding new pet:", error);
+                showMessageModal("Failed to adopt pet. Please try again.");
+            }
+        });
+
+        cancelAddPetButton.addEventListener('click', () => {
+            addPetModal.classList.add('hidden');
+        });
+
+        saveNameButton.addEventListener('click', savePetName);
+        petNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                savePetName();
+            }
+        });
+
+        foodSelectionArea.addEventListener('click', (event) => {
+            const foodButton = event.target.closest('.food-item');
+            if (foodButton) {
+                const foodEmoji = foodButton.dataset.food;
+                const food = foodItems.find(item => item.emoji === foodEmoji);
+                if (food) {
+                    feedPet(food);
+                }
+            }
+        });
+
+        // --- Firebase Authentication and Data Listener ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid; // Still get the user ID, even if not used directly for data path
+                userIdDisplay.textContent = currentUserId; // Display it for debugging/info
+                console.log("Authenticated with user ID:", currentUserId);
+                console.log("Authenticated user object:", user); // Log the user object
+
+                // Unsubscribe from previous listener if exists
+                if (unsubscribePets) {
+                    unsubscribePets();
+                }
+
+                // Set up real-time listener for the SHARED pets collection
+                const q = query(collection(db, `artifacts/${appId}/sharedPets`)); // Updated path
+                unsubscribePets = onSnapshot(q, (snapshot) => {
+                    userPets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    userPets.sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0)); // Sort by creation time
+                    renderPetList();
+                    loadingOverlay.classList.add('hidden'); // Hide loading after initial data load
+                }, (error) => {
+                    console.error("Error fetching pets:", error);
+                    showMessageModal("Failed to load pets. Please check your internet connection and Firebase rules.");
+                    loadingOverlay.classList.add('hidden'); // Hide loading even on error
+                });
+
+            } else {
+                // Not signed in, always attempt anonymous sign-in in a deployed environment
+                try {
+                    await signInAnonymously(auth);
+                    console.log("Signed in anonymously.");
+                } catch (error) {
+                    console.error("Error during anonymous authentication:", error);
+                    console.error("Authentication error details:", error.code, error.message); // Log specific error details
+                    showMessageModal("Failed to authenticate. Please try refreshing the page.");
+                    loadingOverlay.classList.add('hidden'); // Hide loading even on auth error
+                }
+            }
+        });
+
+        // --- PWA Manifest Setup (dynamic blob for self-contained immersive) ---
+        const manifestContent = {
+            "name": "Lil Guys Pet Care", // Updated name
+            "short_name": "Lil Guys",    // Updated short name
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#1f2937",
+            "theme_color": "#1f2937",
+            "icons": [
+                {
+                    "src": "https://placehold.co/192x192/6b46c1/FFFFFF?text=🐾",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                },
+                {
+                    "src": "https://placehold.co/512x512/6b46c1/FFFFFF?text=🐾",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+
+        const blob = new Blob([JSON.stringify(manifestContent)], { type: 'application/json' });
+        const manifestUrl = URL.createObjectURL(blob);
+        document.querySelector('link[rel="manifest"]').href = manifestUrl;
+
+        // Initial render (will be updated by onSnapshot)
+        renderPetList();
+    </script>
+</body>
+</html>
